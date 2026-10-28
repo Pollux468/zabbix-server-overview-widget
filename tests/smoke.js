@@ -1,0 +1,70 @@
+const {JSDOM} = require('jsdom');
+const fs = require('fs');
+const html = fs.readFileSync(__dirname + '/out.html', 'utf8');
+const dom = new JSDOM('<!doctype html><body><div id="w"></div></body>', {runScripts: 'outside-only', pretendToBeVisual: true, url: 'http://z/'});
+const w = dom.window;
+const errors = [];
+w.addEventListener('error', e => errors.push('window error: ' + e.message));
+w.t = s => s;
+w.Curl = class { constructor(u){this.u=u;this.a={};} setArgument(k,v){this.a[k]=v;} getUrl(){return this.u+'?'+new URLSearchParams(this.a);} };
+w.CWidget = class { constructor(){ this._body = w.document.getElementById('w'); this.sent=[]; } setContents(r){ this._body.innerHTML = r.body; } broadcast(d){ this.sent.push(d); } isReferred(){return false;} };
+w.CSS = w.CSS || {}; w.CSS.supports = () => true; w.CSS.escape = s => s;
+w.ResizeObserver = class { observe(){} disconnect(){} };
+w.requestAnimationFrame = f => setTimeout(f, 0);
+const hist = n => Array.from({length:n}, (_, i) => ({clock: 1760000000 + i*300, value: 20 + (i*7)%50}));
+const disk = {filesystem:'C:', label:'C:', fstype:'NTFS', drivetype:'fixed', total:'100 GB', used:'85 GB', free:'15 GB', used_percent:'85.0 %', used_percent_raw:85, free_percent:'15.0 %', status:'warning'};
+const server = {hostid:'10001', name:'SRV-APP01', host:'SRV-APP01', address:'10.0.0.5', ip:'10.0.0.5', os:'Windows Server 2019', os_family:'Windows', agent_ping:1, agent_version:'7.0', cpu_raw:42.5, cpu:'42.5 %', cpu_alert:false, memory_percent_raw:81, memory_percent:'81 %', memory_alert:true, memory_used:'13 GB', memory_total:'16 GB', uptime:'3d', disk_badges:[disk], disks:[disk], disk_alert:true, network:{interfaces:[{name:'eth0', in:1000, out:2000, speed:1e9, status:1}], total_in:'1 MB/s', total_out:'2 MB/s'}, inventory:{os_full:'Windows'}, problems:[], zabbix_problems:0, latest_url:'zabbix.php?x', problems_url:'zabbix.php?y', host_url:'zabbix.php?z', console_target:'10.0.0.5', last_update:'hoy', item_count:3, items:[]};
+const responses = {
+  'widget.serveroverview.disk.get': {host:'SRV-APP01', hostid:'10001', fs:'C:', disk, history:{pused:hist(20)}, range:3600, warning:80, critical:90},
+  'widget.serveroverview.server.get': {server, cpu_history:hist(20), memory_history:hist(20), disk_histories:{'C:':{pused:hist(20)}}, network_histories:{eth0:{in:hist(20), out:hist(20)}}, range:3600, disk_warning:80, disk_critical:90, cpu_warning:75, cpu_critical:90, memory_warning:80, memory_critical:90},
+  'widget.serveroverview.diagnostic.run': {host:'SRV-APP01', target:'10.0.0.5', operation:'ping', output:'ok', exit_code:0, duration:1.2, timed_out:false}
+};
+const calls = [];
+w.fetch = async (url, opts) => { const action = new URL(url, 'http://z/').searchParams.get('action'); calls.push({action, method: opts.method, body: opts.body}); return {ok:true, text: async () => JSON.stringify(JSON.stringify(responses[action]))}; };
+w.eval(fs.readFileSync(__dirname + '/../server_overview_widget/assets/js/class.widget.js', 'utf8') + '\nwindow.CWidgetServerOverview = CWidgetServerOverview;');
+const widget = new w.CWidgetServerOverview();
+widget.setContents({body: html});
+const rows = () => [...w.document.querySelectorAll('tbody tr[data-row]')];
+const visible = () => rows().filter(r => !r.hidden).map(r => r.dataset.hostid);
+const results = {};
+const log = (k, v) => { results[k] = v; console.log(k.padEnd(34), JSON.stringify(v)); };
+log('filas visibles (inicio)', visible());
+log('info paginación', w.document.querySelector('.srv-page-info').textContent);
+w.document.querySelector('.srv-state-filter').value = 'down'; w.document.querySelector('.srv-state-filter').dispatchEvent(new w.Event('change'));
+log('filtro "Sin respuesta"', visible());
+w.document.querySelector('.srv-state-filter').value = 'all'; w.document.querySelector('.srv-state-filter').dispatchEvent(new w.Event('change'));
+const s = w.document.querySelector('.srv-search'); s.value = 'app01'; s.dispatchEvent(new w.Event('input'));
+log('búsqueda "app01"', visible());
+s.value = ''; s.dispatchEvent(new w.Event('input'));
+w.document.querySelector('th[data-sort="name"] .srv-sort-head').click();
+log('orden por nombre (asc)', rows().map(r => r.dataset.hostid));
+w.document.querySelector('.srv-summary-card[data-filter="down"]').click();
+log('tarjeta "Sin respuesta"', visible());
+w.document.querySelector('.srv-summary-card:not([data-filter])').click();
+log('tarjeta sin filtro (no rompe)', visible());
+w.document.querySelector('.srv-summary-card[data-filter="all"]').click();
+const step = async (label, sel) => { w.document.querySelector(sel).click(); await new Promise(r => setTimeout(r, 30));
+  const m = w.document.querySelector('.srv-modal-overlay'); log(label, {modal: !!m, error: m?.querySelector('.srv-modal-error')?.textContent ?? null, svgOrCanvas: m ? m.querySelectorAll('svg, .srv-chart-canvas').length : 0, buttons: m ? m.querySelectorAll('button').length : 0}); };
+(async () => {
+  await step('clic en disco C:', 'button[data-disk]');
+  w.document.querySelector('.srv-modal-close').click();
+  await step('clic en servidor (detalle)', 'button.srv-resource-link');
+  const diag = w.document.querySelector('.srv-modal-overlay [data-diagnostic]');
+  log('botones de diagnóstico', !!diag);
+  if (diag) { diag.click(); await new Promise(r => setTimeout(r, 30)); log('diagnóstico (POST)', calls.at(-1)); log('salida diagnóstico', w.document.querySelector('.srv-modal-overlay pre')?.textContent); }
+  w.document.dispatchEvent(new w.KeyboardEvent('keydown', {key:'Escape', bubbles:true}));
+  log('modal cerrado con Esc', !w.document.querySelector('.srv-modal-overlay'));
+  log('broadcast host', widget.sent.at(-1));
+  log('errores de ventana', errors);
+  const assert = require('assert');
+  assert.deepStrictEqual(results['filas visibles (inicio)'], ['10001', '10002']);
+  assert.deepStrictEqual(results['filtro "Sin respuesta"'], ['10002']);
+  assert.deepStrictEqual(results['búsqueda "app01"'], ['10001']);
+  assert.strictEqual(results['clic en disco C:'].error, null);
+  assert.strictEqual(results['clic en servidor (detalle)'].error, null);
+  assert.strictEqual(results['botones de diagnóstico'], true);
+  assert.strictEqual(results['diagnóstico (POST)'].method, 'POST');
+  assert.strictEqual(results['modal cerrado con Esc'], true);
+  assert.deepStrictEqual(errors, []);
+  console.log('\nOK: pruebas de humo superadas');
+})().catch(e => { console.log('EXCEPCIÓN', e.stack); process.exit(1); });
