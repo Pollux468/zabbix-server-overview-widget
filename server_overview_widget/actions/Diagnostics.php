@@ -27,7 +27,19 @@ class Diagnostics extends CController {
 		return $valid;
 	}
 
-	protected function doAction(): void {
+		protected function doAction(): void {
+		try {
+			$this->handle();
+		}
+		catch (\Throwable $e) {
+			error_log('[serveroverview] '.static::class.': '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine());
+			$this->sendJson([
+				'error' => $e->getMessage().' ('.basename($e->getFile()).':'.$e->getLine().')'
+			]);
+		}
+	}
+
+	private function handle(): void {
 		$hostid = $this->getInput('hostid');
 		$operation = strtolower(trim((string) $this->getInput('operation')));
 		if (!in_array($operation, ['ping', 'traceroute', 'nmap'], true)) {

@@ -282,7 +282,9 @@ class CWidgetServerOverview extends CWidget {
 
 		const matchingRows = allRows.filter(row => {
 			const matchesSearch = search === '' || (row.dataset.search ?? '').toLocaleLowerCase().includes(search);
-			const matchesState = (state === 'all' || (state === 'problems' ? row.dataset.problems === '1' : row.dataset.state === state));
+			const alertFlags = {problems: 'problems', cpu: 'cpuAlert', memory: 'memoryAlert', disk: 'diskAlert'};
+			const matchesState = state === 'all'
+				|| (alertFlags[state] !== undefined ? row.dataset[alertFlags[state]] === '1' : row.dataset.state === state);
 			return matchesSearch && matchesState;
 		});
 
@@ -395,7 +397,14 @@ class CWidgetServerOverview extends CWidget {
 		}
 
 		if (data?.error) {
-			throw new Error(typeof data.error === 'string' ? data.error : 'Error de respuesta del servidor.');
+			if (typeof data.error === 'string') {
+				throw new Error(data.error);
+			}
+
+			// Zabbix devuelve {"error": {"title": "...", "messages": [...]}} ante errores internos o de entrada.
+			const detail = [data.error.title, ...(Array.isArray(data.error.messages) ? data.error.messages : [])]
+				.filter(part => typeof part === 'string' && part !== '').join(' · ');
+			throw new Error(detail !== '' ? detail : 'Error de respuesta del servidor.');
 		}
 
 		return data;

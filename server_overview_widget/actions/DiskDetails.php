@@ -34,7 +34,19 @@ class DiskDetails extends CController {
 		return $valid;
 	}
 
-	protected function doAction(): void {
+		protected function doAction(): void {
+		try {
+			$this->handle();
+		}
+		catch (\Throwable $e) {
+			error_log('[serveroverview] '.static::class.': '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine());
+			$this->sendJson([
+				'error' => $e->getMessage().' ('.basename($e->getFile()).':'.$e->getLine().')'
+			]);
+		}
+	}
+
+	private function handle(): void {
 		$hostid = $this->getInput('hostid');
 		$fs = $this->getInput('fs');
 		$range = (int) $this->getInput('range', 3600);
@@ -142,7 +154,7 @@ class DiskDetails extends CController {
 			$data = json_decode((string) $item['lastvalue'], true);
 			if (!is_array($data)) continue;
 			if (($data['fsname'] ?? '') !== $fs) continue;
-			$disk['label'] = $data['fslabel'] ?? $this->filesystemLabel($fs);
+			$disk['label'] = (trim((string) ($data['fslabel'] ?? '')) !== '' ? trim((string) $data['fslabel']) : $this->filesystemLabel($fs));
 			$disk['fstype'] = $data['fstype'] ?? '—';
 			$disk['drivetype'] = $data['fsdrivetype'] ?? '—';
 			break;

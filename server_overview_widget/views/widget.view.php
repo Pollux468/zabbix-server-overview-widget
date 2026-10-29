@@ -100,11 +100,12 @@ $summary_cards = $tag('div', [
 		$percent_of($summary['down'], $summary['total'])),
 	$card('Con alertas', $summary['problems'], $summary['problems'] > 0 ? 'critical' : 'ok',
 		['data-filter' => 'problems'], '', '', $percent_of($summary['problems'], $summary['total'])),
-	$card('CPU alta', $summary['cpu_alerts'], $summary['cpu_alerts'] > 0 ? 'warning' : 'ok', [], 'sobre '.$cpu_warning.' %'),
-	$card('RAM alta', $summary['memory_alerts'], $summary['memory_alerts'] > 0 ? 'warning' : 'ok', [],
-		'sobre '.$memory_warning.' %'),
-	$card('Discos altos', $summary['disk_alerts'], $summary['disk_alerts'] > 0 ? 'warning' : 'ok', [],
-		'sobre '.$data['disk_warning'].' %')
+	$card('CPU alta', $summary['cpu_alerts'], $summary['cpu_alerts'] > 0 ? 'warning' : 'ok', ['data-filter' => 'cpu'],
+		'sobre '.$cpu_warning.' %'),
+	$card('RAM alta', $summary['memory_alerts'], $summary['memory_alerts'] > 0 ? 'warning' : 'ok',
+		['data-filter' => 'memory'], 'sobre '.$memory_warning.' %'),
+	$card('Discos altos', $summary['disk_alerts'], $summary['disk_alerts'] > 0 ? 'warning' : 'ok',
+		['data-filter' => 'disk'], 'sobre '.$data['disk_warning'].' %')
 ], 'srv-summary');
 
 // Barra de herramientas --------------------------------------------------------------------------------------------
@@ -124,7 +125,10 @@ $toolbar = $tag('div', [
 			$tag('option', 'Todos los estados', null, ['value' => 'all']),
 			$tag('option', 'Activos', null, ['value' => 'up']),
 			$tag('option', 'Sin respuesta', null, ['value' => 'down']),
-			$tag('option', 'Con alertas', null, ['value' => 'problems'])
+			$tag('option', 'Con alertas', null, ['value' => 'problems']),
+			$tag('option', 'CPU alta', null, ['value' => 'cpu']),
+			$tag('option', 'RAM alta', null, ['value' => 'memory']),
+			$tag('option', 'Discos altos', null, ['value' => 'disk'])
 		], 'srv-state-filter', ['aria-label' => 'Filtrar por estado']),
 		$tag('span', 'Ordenar', 'srv-sort-label'),
 		$tag('select', [
@@ -259,6 +263,9 @@ foreach ($data['servers'] as $server) {
 		'data-hostid' => $server['hostid'],
 		'data-state' => $server['agent_ping'] === 1 ? 'up' : 'down',
 		'data-problems' => $server['problems'] > 0 ? '1' : '0',
+		'data-cpu-alert' => $server['cpu_alert'] ? '1' : '0',
+		'data-memory-alert' => $server['memory_alert'] ? '1' : '0',
+		'data-disk-alert' => $server['disk_alert'] ? '1' : '0',
 		'data-sort-risk' => $server['risk_score'],
 		'data-sort-consumption' => $sort_value($consumption),
 		'data-sort-name' => mb_strtolower($server['name']),

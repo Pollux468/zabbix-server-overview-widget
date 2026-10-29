@@ -383,7 +383,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 			if (!is_array($data)) continue;
 			$fs = $data['fsname'] ?? '';
 			if ($fs === '') continue;
-			$disks[$fs]['label'] = $data['fslabel'] ?? $this->filesystemLabel($fs);
+			$disks[$fs]['label'] = (trim((string) ($data['fslabel'] ?? '')) !== '' ? trim((string) $data['fslabel']) : $this->filesystemLabel($fs));
 			$disks[$fs]['fstype'] = $data['fstype'] ?? '—';
 			$disks[$fs]['drivetype'] = $data['fsdrivetype'] ?? '—';
 		}
@@ -421,7 +421,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 			$disk['used'] = $this->formatBytes($disk['used_raw']);
 			$disk['total'] = $this->formatBytes($total);
 			$disk['free'] = $this->formatBytes($free);
-			$disk['label'] = $disk['label'] ?? $this->filesystemLabel($fs);
+			$disk['label'] = trim((string) ($disk['label'] ?? '')) !== '' ? $disk['label'] : $this->filesystemLabel($fs);
 			$disk['status'] = $used_percent === null
 				? 'unknown'
 				: ($used_percent >= $this->disk_critical ? 'critical' : ($used_percent >= $this->disk_warning ? 'warning' : 'ok'));

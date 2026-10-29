@@ -41,7 +41,19 @@ class ServerDetails extends CController {
 		return $valid;
 	}
 
-	protected function doAction(): void {
+		protected function doAction(): void {
+		try {
+			$this->handle();
+		}
+		catch (\Throwable $e) {
+			error_log('[serveroverview] '.static::class.': '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine());
+			$this->sendJson([
+				'error' => $e->getMessage().' ('.basename($e->getFile()).':'.$e->getLine().')'
+			]);
+		}
+	}
+
+	private function handle(): void {
 		$hostid = $this->getInput('hostid');
 		$range = (int) $this->getInput('range', 3600);
 
@@ -301,7 +313,7 @@ class ServerDetails extends CController {
 			if (!is_array($data)) continue;
 			$fs = $data['fsname'] ?? '';
 			if ($fs === '') continue;
-			$disks[$fs]['label'] = $data['fslabel'] ?? $this->filesystemLabel($fs);
+			$disks[$fs]['label'] = (trim((string) ($data['fslabel'] ?? '')) !== '' ? trim((string) $data['fslabel']) : $this->filesystemLabel($fs));
 			$disks[$fs]['fstype'] = $data['fstype'] ?? '—';
 			$disks[$fs]['drivetype'] = $data['fsdrivetype'] ?? '—';
 		}
@@ -330,7 +342,7 @@ class ServerDetails extends CController {
 			$disk['used'] = $this->formatBytes($disk['used_raw']);
 			$disk['total'] = $this->formatBytes($total);
 			$disk['free'] = $this->formatBytes($free);
-			$disk['label'] = $disk['label'] ?? $this->filesystemLabel($fs);
+			$disk['label'] = trim((string) ($disk['label'] ?? '')) !== '' ? $disk['label'] : $this->filesystemLabel($fs);
 			$disk['status'] = $used_percent === null
 				? 'unknown'
 				: ($used_percent >= $this->disk_critical ? 'critical' : ($used_percent >= $this->disk_warning ? 'warning' : 'ok'));

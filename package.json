@@ -1,13 +1,13 @@
 {
   "name": "zabbix-server-overview-widget",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "Widget de Zabbix 7.0 «Server: Vista general» — herramientas de desarrollo y pruebas",
   "license": "GPL-3.0-or-later",
   "scripts": {
     "lint:js": "node --check server_overview_widget/assets/js/class.widget.js",
     "lint:php": "find server_overview_widget tests -name '*.php' -print0 | xargs -0 -n1 php -l",
-    "test": "php tests/render.php > tests/out.html && node tests/smoke.js",
+    "test": "php tests/render.php > tests/out.html && node tests/smoke.js && php tests/actions.php",
     "check": "npm run lint:php && npm run lint:js && npm test"
   },
   "devDependencies": {
