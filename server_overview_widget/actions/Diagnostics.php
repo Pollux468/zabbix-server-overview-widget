@@ -3,10 +3,10 @@
 namespace Modules\ServerOverview\Actions;
 
 use API;
-use CController;
+use CControllerDashboardWidgetView;
 use CControllerResponseData;
 
-class Diagnostics extends CController {
+class Diagnostics extends CControllerDashboardWidgetView {
 
 	protected function checkPermissions(): bool {
 		return $this->getUserType() >= USER_TYPE_ZABBIX_USER;

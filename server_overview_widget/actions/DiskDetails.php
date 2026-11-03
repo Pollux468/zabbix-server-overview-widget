@@ -3,11 +3,11 @@
 namespace Modules\ServerOverview\Actions;
 
 use API;
-use CController;
+use CControllerDashboardWidgetView;
 use CControllerResponseData;
 use Modules\ServerOverview\Includes\WidgetForm;
 
-class DiskDetails extends CController {
+class DiskDetails extends CControllerDashboardWidgetView {
 
 	private float $disk_warning = WidgetForm::DEFAULT_DISK_WARNING;
 	private float $disk_critical = WidgetForm::DEFAULT_DISK_CRITICAL;
