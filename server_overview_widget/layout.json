@@ -1,0 +1,15 @@
+{
+	"manifest_version": 2.0,
+	"name": "Server Overview Widget Layout",
+	"pages": [
+		{
+			"name": "default",
+			"blocks": [
+				{
+					"name": "main",
+					"width": 12
+				}
+			]
+		}
+	]
+}
