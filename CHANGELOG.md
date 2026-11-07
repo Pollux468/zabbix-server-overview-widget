@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.3] - 2026-11-08
+
+### Security
+- **Error exposure fixed**: All actions (`WidgetView`, `DiskDetails`, `ServerDetails`, `Diagnostics`) now use `safeErrorMessage()` helper. In production (debug=off): returns generic `"Error interno del servidor"`; in debug mode: shows full exception details.
+- **Target validation**: `Diagnostics.php` adds `validateTarget()` — strict allowlist (IPv4/IPv6 via `FILTER_VALIDATE_IP` or domain via `FILTER_VALIDATE_DOMAIN`) before `escapeshellarg()`. Rejects private/reserved IPs and invalid hostnames.
+- **Admin-only diagnostics**: `checkPermissions()` now requires `USER_TYPE_ZABBIX_ADMIN` (was `USER_TYPE_ZABBIX_USER`). Ping, traceroute, nmap restricted to Super Admins.
+
+### Fixed
+- **Autoloader case-sensitivity**: Renamed `Actions/` → `actions/`, `Includes/` → `includes/` to match Zabbix autoloader expectations (lowercase namespace segments). Fixes "Class not found" on widget actions.
+- **Widget form registration**: Added `"form_class": "WidgetForm"` to manifest.json so Zabbix loads custom form with `rows_per_page`, thresholds, columns, etc. Fixes Fatal error on widget edit.
+
+### Testing
+- **Validated on Zabbix 8.0**: Full integration test against local stack (Zabbix 8.0.0 + PHP 8.1 + nginx + php-fpm). All actions verified: `view`, `disk.get`, `server.get`, `diagnostic.run` (ping/traceroute/nmap).
+- **Unit tests updated**: `DiagnosticsTest.php` (29 tests passing) reflects new admin-only permission and safe error messages.
+
+### Changed
+- Updated version to 0.2.3 in manifest.json
+
 ## [0.2.2] - 2026-11-03
 
 ### Fixed

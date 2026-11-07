@@ -4,12 +4,13 @@
 	"type": "widget",
 	"name": "Server: Vista general",
 	"namespace": "ServerOverview",
-	"version": "0.2.2",
+	"version": "0.2.3",
 	"author": "Roberto Columna",
 	"description": "Vista consolidada de servidores standalone (Linux/Windows) monitoreados por Zabbix Agent. CPU, RAM, discos, red, uptime, inventario.",
 	"url": "https://github.com/pollux468/zabbix-server-overview-widget",
 	"widget": {
 		"js_class": "CWidgetServerOverview",
+		"form_class": "WidgetForm",
 		"size": {
 			"width": 72,
 			"height": 12

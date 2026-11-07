@@ -42,16 +42,16 @@ class ServerDetails extends CControllerDashboardWidgetView {
 	}
 
 		protected function doAction(): void {
-		try {
-			$this->handle();
+			try {
+				$this->handle();
+			}
+			catch (\Throwable $e) {
+				error_log('[serveroverview] '.static::class.': '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine());
+				$this->sendJson([
+					'error' => $this->safeErrorMessage($e)
+				]);
+			}
 		}
-		catch (\Throwable $e) {
-			error_log('[serveroverview] '.static::class.': '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine());
-			$this->sendJson([
-				'error' => $e->getMessage().' ('.basename($e->getFile()).':'.$e->getLine().')'
-			]);
-		}
-	}
 
 	private function handle(): void {
 		$hostid = $this->getInput('hostid');
@@ -97,6 +97,13 @@ class ServerDetails extends CControllerDashboardWidgetView {
 			'memory_warning' => $this->memory_warning,
 			'memory_critical' => $this->memory_critical
 		]);
+	}
+
+	private function safeErrorMessage(\Throwable $e): string {
+		if ($this->getDebugMode()) {
+			return $e->getMessage().' ('.basename($e->getFile()).':'.$e->getLine().')';
+		}
+		return 'Error interno del servidor';
 	}
 
 	private function thresholdPair(string $warning_field, string $critical_field, int $default_warning, int $default_critical): array {

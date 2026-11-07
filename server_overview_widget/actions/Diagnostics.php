@@ -9,7 +9,7 @@ use CControllerResponseData;
 class Diagnostics extends CControllerDashboardWidgetView {
 
 	protected function checkPermissions(): bool {
-		return $this->getUserType() >= USER_TYPE_ZABBIX_USER;
+		return $this->getUserType() >= USER_TYPE_ZABBIX_ADMIN;
 	}
 
 	protected function checkInput(): bool {
@@ -28,16 +28,16 @@ class Diagnostics extends CControllerDashboardWidgetView {
 	}
 
 		protected function doAction(): void {
-		try {
-			$this->handle();
+			try {
+				$this->handle();
+			}
+			catch (\Throwable $e) {
+				error_log('[serveroverview] '.static::class.': '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine());
+				$this->sendJson([
+					'error' => $this->safeErrorMessage($e)
+				]);
+			}
 		}
-		catch (\Throwable $e) {
-			error_log('[serveroverview] '.static::class.': '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine());
-			$this->sendJson([
-				'error' => $e->getMessage().' ('.basename($e->getFile()).':'.$e->getLine().')'
-			]);
-		}
-	}
 
 	private function handle(): void {
 		$hostid = $this->getInput('hostid');
@@ -62,6 +62,11 @@ class Diagnostics extends CControllerDashboardWidgetView {
 		$ip = $this->getHostAddress($host['interfaces'] ?? []);
 		$target = $ip !== '—' ? $ip : $host['host'];
 
+		if (!$this->validateTarget($target)) {
+			$this->sendJson(['error' => 'Destino de diagnóstico inválido.']);
+			return;
+		}
+
 		$output = '';
 		$exit_code = -1;
 		$timed_out = false;
@@ -75,12 +80,8 @@ class Diagnostics extends CControllerDashboardWidgetView {
 				[$output, $exit_code, $timed_out] = $this->runCommand("traceroute -w 2 -q 1 -m 20 ".escapeshellarg($target), 30);
 				break;
 			case 'nmap':
-				if ($this->getUserType() < USER_TYPE_ZABBIX_ADMIN) {
-					$this->sendJson(['error' => 'Insufficient permissions for port scan']);
-					return;
-				}
-				[$output, $exit_code, $timed_out] = $this->runCommand("nmap -T4 -F ".escapeshellarg($target), 60);
-				break;
+						[$output, $exit_code, $timed_out] = $this->runCommand("nmap -T4 -F ".escapeshellarg($target), 60);
+						break;
 		}
 
 		$duration = round(microtime(true) - $start, 2);
@@ -96,6 +97,23 @@ class Diagnostics extends CControllerDashboardWidgetView {
 		]);
 	}
 
+	private function safeErrorMessage(\Throwable $e): string {
+		if ($this->getDebugMode()) {
+			return $e->getMessage().' ('.basename($e->getFile()).':'.$e->getLine().')';
+		}
+		return 'Error interno del servidor';
+	}
+
+	private function validateTarget(string $target): bool {
+		if (filter_var($target, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+			return true;
+		}
+		if (filter_var($target, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME)) {
+			return true;
+		}
+		return false;
+	}
+
 	private function getHostAddress(array $interfaces): string {
 		if (!$interfaces) return '—';
 		usort($interfaces, static fn(array $a, array $b): int => (int) $b['main'] <=> (int) $a['main']);
@@ -106,7 +124,7 @@ class Diagnostics extends CControllerDashboardWidgetView {
 		return '—';
 	}
 
-	private function runCommand(string $cmd, int $timeout): array {
+	protected function runCommand(string $cmd, int $timeout): array {
 		$descriptors = [
 			1 => ['pipe', 'w'],
 			2 => ['pipe', 'w']
@@ -129,9 +147,9 @@ class Diagnostics extends CControllerDashboardWidgetView {
 			if (!$status['running']) break;
 
 			if (time() - $start >= $timeout) {
-				proc_terminate($process, SIGKILL);
-				$timed_out = true;
-				break;
+			    proc_terminate($process, \SIGKILL);
+			    $timed_out = true;
+			    break;
 			}
 
 			$read = [$pipes[1], $pipes[2]];

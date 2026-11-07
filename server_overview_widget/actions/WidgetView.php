@@ -98,6 +98,13 @@ class WidgetView extends CControllerDashboardWidgetView {
 		]));
 	}
 
+	private function safeErrorMessage(\Throwable $e): string {
+		if ($this->getDebugMode()) {
+			return $e->getMessage().' ('.basename($e->getFile()).':'.$e->getLine().')';
+		}
+		return 'Error interno del servidor';
+	}
+
 	private function thresholdPair(string $warning_field, string $critical_field, int $default_warning, int $default_critical): array {
 		$warning = (int) ($this->fields_values[$warning_field] ?? $default_warning);
 		$critical = (int) ($this->fields_values[$critical_field] ?? $default_critical);
