@@ -1,4 +1,9 @@
 node_modules/
-tests/out.html
+vendor/
+tests/Tests/out.html
+composer
+composer.json
+composer.lock
+phpunit.phar
 *.zip
 .DS_Store

@@ -1,6 +1,6 @@
 # Zabbix · Server: Vista general
 
-Widget de dashboard para **Zabbix 7.0** que muestra en una sola tabla los servidores standalone (Linux y Windows)
+Widget de dashboard para **Zabbix 7.0/8.0** que muestra en una sola tabla los servidores standalone (Linux y Windows)
 monitoreados con **Zabbix Agent**: estado, CPU, RAM, discos, uptime, red y alertas, con filtros, ordenación,
 paginación y ventanas de detalle (gráficos históricos y diagnósticos de red).
 
@@ -9,7 +9,7 @@ y se distribuye bajo la misma licencia (GPL-3.0).
 
 ## Requisitos
 
-- Zabbix frontend 7.0 (manifest v2). Hosts con el ítem `agent.ping` (plantillas *Linux/Windows by Zabbix agent*).
+- Zabbix frontend 7.0/8.0 (manifest v2). Hosts con el ítem `agent.ping` (plantillas *Linux/Windows by Zabbix agent*).
 - Para los diagnósticos: `ping`, `traceroute` y, opcionalmente, `nmap` instalados en el servidor del frontend.
 
 ## Instalación
@@ -51,7 +51,7 @@ server_overview_widget/
 │   ├── widget.view.php      # HTML de la tabla
 │   └── widget.edit.php      # formulario de edición
 └── assets/{js,css}/         # lógica y estilos del cliente
-tests/                       # pruebas de humo (vista PHP + JS en jsdom)
+tests/Tests/                 # pruebas de humo (vista PHP + JS en jsdom) + unit tests (phpunit)
 ```
 
 ## Desarrollo
@@ -59,12 +59,19 @@ tests/                       # pruebas de humo (vista PHP + JS en jsdom)
 ```bash
 npm install
 npm run check     # php -l, node --check y pruebas de humo
+php vendor/bin/phpunit tests/Tests/DiagnosticsTest.php  # unit tests (29 tests)
 ```
 
-`tests/render.php` renderiza la vista con datos de ejemplo (sin necesitar Zabbix) y `tests/smoke.js` carga el JS
+`tests/Tests/render.php` renderiza la vista con datos de ejemplo (sin necesitar Zabbix) y `tests/Tests/smoke.js` carga el JS
 en jsdom y ejercita filtros, orden, modales y diagnóstico. El workflow de GitHub Actions ejecuta lo mismo en cada push.
 
 Los errores del servidor se ven en el log de nginx/PHP-FPM; los del cliente, en la consola del navegador (F12).
+
+## Seguridad (v0.2.3+)
+
+- **Sanitización de errores**: en producción solo `"Error interno del servidor"`; en debug, detalle completo.
+- **Validación de targets**: allowlist estricta (IPv4/IPv6/dominio) antes de `escapeshellarg()`.
+- **Diagnósticos solo admin**: requiere `USER_TYPE_ZABBIX_ADMIN`.
 
 ## Licencia y créditos
 
