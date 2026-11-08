@@ -278,7 +278,7 @@ class DiskDetails extends CControllerDashboardWidgetView {
 		return number_format($value, $index > 1 ? 1 : 0, '.', '').' '.$units[$index];
 	}
 
-	private function sendJson(array $data): void {
+	protected function sendJson(array $data): void {
 		$this->setResponse(
 			(new CControllerResponseData([
 				'main_block' => json_encode($data, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE

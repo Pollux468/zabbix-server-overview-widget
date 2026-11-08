@@ -1,0 +1,25 @@
+{
+    "name": "rcolumna/server-overview-widget",
+    "description": "Zabbix Server Overview Widget",
+    "type": "project",
+    "require": {
+        "php": ">=8.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\ServerOverview\\": "server_overview_widget/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\ServerOverview\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true
+    }
+}

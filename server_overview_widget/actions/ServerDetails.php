@@ -593,7 +593,7 @@ class ServerDetails extends CControllerDashboardWidgetView {
 		return $lastclock > 0 ? zbx_date2str(DATE_TIME_FORMAT_SECONDS, $lastclock) : '—';
 	}
 
-	private function sendJson(array $data): void {
+	protected function sendJson(array $data): void {
 		$this->setResponse(
 			(new CControllerResponseData([
 				'main_block' => json_encode($data, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE

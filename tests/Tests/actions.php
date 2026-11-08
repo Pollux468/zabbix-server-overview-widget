@@ -16,13 +16,16 @@ namespace {
 	class CController { public $response; public $input = [];
 		function getInput($k, $d = null) { return $this->input[$k] ?? $d; }
 		function hasInput($k) { return array_key_exists($k, $this->input); }
-		function setResponse($r) { $this->response = $r; } function getUserType() { return 1; } }
+		function setResponse($r) { $this->response = $r; } function getUserType() { return 1; }
+		function getDebugMode() { return false; }
+		protected function sendJson(array $data): void { $this->setResponse(new CControllerResponseData($data)); $this->response->disableView(); }
+	}
 	class CControllerDashboardWidgetView extends CController { public $fields_values = []; }
 	class API { static function __callStatic($n, $a) { return new class { function get($o) { throw new RuntimeException('API caída'); } }; } }
 
-	require __DIR__.'/../server_overview_widget/includes/WidgetForm.php';
-	require __DIR__.'/../server_overview_widget/actions/ServerDetails.php';
-	require __DIR__.'/../server_overview_widget/actions/WidgetView.php';
+	require __DIR__.'/../../server_overview_widget/includes/WidgetForm.php';
+	require __DIR__.'/../../server_overview_widget/actions/ServerDetails.php';
+	require __DIR__.'/../../server_overview_widget/actions/WidgetView.php';
 
 	$fail = 0;
 	$check = function (string $name, bool $ok) use (&$fail) { echo ($ok ? 'ok   ' : 'FAIL ').$name."\n"; $fail += $ok ? 0 : 1; };
@@ -43,10 +46,10 @@ namespace {
 	}
 
 	$obj = new Modules\ServerOverview\Actions\ServerDetails();
-	$obj->input = ['hostid' => '10001'];
-	$m = new ReflectionMethod($obj, 'doAction'); $m->setAccessible(true); $m->invoke($obj);
-	$json = json_decode($obj->response->data['main_block'] ?? '', true);
-	$check('excepción -> JSON con "error" legible', isset($json['error']) && str_contains($json['error'], 'API caída'));
+			$obj->input = ['hostid' => '10001'];
+			$m = new ReflectionMethod($obj, 'doAction'); $m->setAccessible(true); $m->invoke($obj);
+			$json = json_decode($obj->response->data['main_block'] ?? '', true);
+				$check('excepción -> JSON con "error" legible (modo seguro)', isset($json['error']) && $json['error'] === 'Error interno del servidor');
 	$check('la respuesta no usa vista HTML', $obj->response->view === false);
 
 	exit($fail ? 1 : 0);

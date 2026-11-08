@@ -21,7 +21,7 @@ const responses = {
 };
 const calls = [];
 w.fetch = async (url, opts) => { const action = new URL(url, 'http://z/').searchParams.get('action'); calls.push({action, method: opts.method, body: opts.body}); return {ok:true, text: async () => JSON.stringify(JSON.stringify(responses[action]))}; };
-w.eval(fs.readFileSync(__dirname + '/../server_overview_widget/assets/js/class.widget.js', 'utf8') + '\nwindow.CWidgetServerOverview = CWidgetServerOverview;');
+w.eval(fs.readFileSync(__dirname + '/../../server_overview_widget/assets/js/class.widget.js', 'utf8') + '\nwindow.CWidgetServerOverview = CWidgetServerOverview;');
 const widget = new w.CWidgetServerOverview();
 widget.setContents({body: html});
 const rows = () => [...w.document.querySelectorAll('tbody tr[data-row]')];
